@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>デシベル計測 | 広川歯科医院</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  min-height: 100vh;
+}
+#app {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+h1 {
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #1d1d1f;
+}
+
+/* ── メーターリング ── */
+#meter-ring {
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 1.25rem;
+  position: relative;
+}
+#meter-ring svg { width: 100%; height: 100%; }
+#db-display {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+#db-value {
+  font-size: 56px;
+  font-weight: 300;
+  color: #1d1d1f;
+  line-height: 1;
+  letter-spacing: -2px;
+}
+#db-unit {
+  font-size: 16px;
+  color: #86868b;
+  margin-top: 2px;
+}
+#level-label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 6px;
+  color: #86868b;
+}
+
+/* ── 波形バー ── */
+#bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 56px;
+  margin: 0.75rem 0;
+  padding: 0 4px;
+}
+.bar {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+  background: #d1d1d6;
+  transition: height 0.08s ease;
+}
+
+/* ── ピーク行 ── */
+#peak-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #86868b;
+  margin: 0.5rem 0 1rem;
+  padding: 0 4px;
+}
+#peak-val { font-weight: 500; color: #1d1d1f; }
+#reset-peak {
+  font-size: 12px;
+  color: #0071e3;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  -webkit-tap-highlight-color: transparent;
+  display: none;
+}
+
+/* ── ステータスカード ── */
+#status-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+#status-icon { font-size: 22px; line-height: 1; flex-shrink: 0; }
+#status-title { font-size: 14px; font-weight: 500; color: #1d1d1f; }
+#status-text { font-size: 12px; color: #86868b; margin-top: 3px; }
+
+/* ── ボタン ── */
+#start-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: #0071e3;
+  color: white;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+#start-btn:active { opacity: 0.7; }
+
+/* ── 参考レベル ── */
+#guide {
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  margin-top: 1.25rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+#guide-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #86868b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.guide-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 0.5px solid #f0f0f0;
+}
+.guide-row:last-child { border-bottom: none; }
+.guide-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%; flex-shrink: 0;
+}
+.guide-label { font-size: 13px; color: #3d3d3f; flex: 1; }
+.guide-db { font-size: 13px; font-weight: 500; color: #1d1d1f; }
+
+/* ── 注意書き ── */
+#disclaimer {
+  font-size: 11px;
+  color: #aeaeb2;
+  text-align: center;
+  margin-top: 1.25rem;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>🎙️ デシベル計測</h1>
+
+  <div id="meter-ring">
+    <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+      <!-- 背景トラック: 252° の弧 -->
+      <circle cx="110" cy="110" r="95"
+        fill="none" stroke="#e5e5ea" stroke-width="12" stroke-linecap="round"
+        stroke-dasharray="497" stroke-dashoffset="124"
+        transform="rotate(126 110 110)"/>
+      <!-- 値の弧 -->
+      <circle id="arc" cx="110" cy="110" r="95"
+        fill="none" stroke="#0071e3" stroke-width="12" stroke-linecap="round"
+        stroke-dasharray="497" stroke-dashoffset="497"
+        transform="rotate(126 110 110)"
+        style="transition: stroke-dashoffset 0.12s ease, stroke 0.12s ease;"/>
+    </svg>
+    <div id="db-display">
+      <div id="db-value">--</div>
+      <div id="db-unit">dB</div>
+      <div id="level-label">待機中</div>
+    </div>
+  </div>
+
+  <div id="bars"></div>
+
+  <div id="peak-row">
+    <span>ピーク値</span>
+    <span id="peak-val">-- dB</span>
+    <button id="reset-peak">リセット</button>
+  </div>
+
+  <div id="status-card">
+    <div id="status-icon">🎙️</div>
+    <div>
+      <div id="status-title">計測を開始してください</div>
+      <div id="status-text">「計測開始」をタップするとマイクのアクセスを求めます</div>
+    </div>
+  </div>
+
+  <button id="start-btn">計測開始</button>
+
+  <div id="guide">
+    <div id="guide-header">参考レベル（目安）</div>
+    <div class="guide-row">
+      <div class="guide-dot" style="background:#34C759;"></div>
+      <span class="guide-label">静かな室内・図書館</span>
+      <span class="guide-db">〜40 dB</span>
+    </div>
+    <div class="guide-row">
+      <div class="guide-dot" style="background:#30D158;"></div>
+      <span class="guide-label">通常会話</span>
+      <span class="guide-db">50〜65 dB</span>
+    </div>
+    <div class="guide-row">
+      <div class="guide-dot" style="background:#FFD60A;"></div>
+      <span class="guide-label">賑やかな診療室</span>
+      <span class="guide-db">65〜75 dB</span>
+    </div>
+    <div class="guide-row">
+      <div class="guide-dot" style="background:#FF9F0A;"></div>
+      <span class="guide-label">タービン・超音波器具</span>
+      <span class="guide-db">75〜85 dB</span>
+    </div>
+    <div class="guide-row">
+      <div class="guide-dot" style="background:#FF3B30;"></div>
+      <span class="guide-label">⚠️ 長時間曝露で聴力リスク</span>
+      <span class="guide-db">85 dB〜</span>
+    </div>
+  </div>
+
+  <div id="disclaimer">
+    ※ 端末・マイク特性により±10 dB程度の誤差があります<br>
+    法的基準値の測定には検定済み騒音計をご使用ください
+  </div>
+</div>
+
+<script>
+const NUM_BARS = 30;
+const barsEl = document.getElementById('bars');
+const bars = [];
+for (let i = 0; i < NUM_BARS; i++) {
+  const b = document.createElement('div');
+  b.className = 'bar';
+  barsEl.appendChild(b);
+  bars.push(b);
+}
+
+let audioCtx, analyser, source, animId;
+let isRunning = false;
+let peak = -Infinity;
+const history = new Array(NUM_BARS).fill(20);
+
+function getColor(db) {
+  if (db < 50) return '#34C759';
+  if (db < 65) return '#30D158';
+  if (db < 75) return '#FFD60A';
+  if (db < 85) return '#FF9F0A';
+  return '#FF3B30';
+}
+
+function getLevelLabel(db) {
+  if (db < 40) return '非常に静か';
+  if (db < 55) return '静か';
+  if (db < 65) return '通常会話レベル';
+  if (db < 75) return 'やや騒がしい';
+  if (db < 85) return '騒がしい';
+  return '⚠️ 大音量';
+}
+
+function updateArc(db) {
+  const arc = document.getElementById('arc');
+  const ratio = Math.max(0, Math.min(1, (db - 20) / 80));
+  const totalLen = 373;
+  arc.style.strokeDashoffset = 497 - totalLen * ratio;
+  arc.style.stroke = getColor(db);
+}
+
+function tick() {
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(data);
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+  const rms = Math.sqrt(sum / data.length);
+  const raw = rms > 0 ? 20 * Math.log10(rms / 255) + 100 : 20;
+  const db = Math.round(Math.max(20, Math.min(100, raw)));
+
+  document.getElementById('db-value').textContent = db;
+  const lbl = document.getElementById('level-label');
+  lbl.textContent = getLevelLabel(db);
+  lbl.style.color = getColor(db);
+  updateArc(db);
+
+  if (db > peak) {
+    peak = db;
+    document.getElementById('peak-val').textContent = peak + ' dB';
+    document.getElementById('reset-peak').style.display = 'inline';
+  }
+
+  history.push(db);
+  history.shift();
+  const maxH = barsEl.offsetHeight || 56;
+  bars.forEach((b, i) => {
+    const v = history[i];
+    const h = Math.max(2, Math.round(((v - 20) / 80) * maxH));
+    b.style.height = h + 'px';
+    b.style.background = getColor(v);
+  });
+
+  const t = document.getElementById('status-title');
+  const s = document.getElementById('status-text');
+  t.textContent = getLevelLabel(db);
+  s.textContent = db >= 85 ? '⚠️ 長時間曝露は聴力に影響する可能性があります' :
+    db >= 75 ? '器具使用中の典型的なレベルです' :
+    db >= 65 ? '診療中の会話・作業環境です' : '快適な音環境です';
+
+  animId = requestAnimationFrame(tick);
+}
+
+async function startMeter() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.75;
+    source = audioCtx.createMediaStreamSource(stream);
+    source.connect(analyser);
+    isRunning = true;
+    const btn = document.getElementById('start-btn');
+    btn.textContent = '計測停止';
+    btn.style.background = '#FF3B30';
+    document.getElementById('status-icon').textContent = '🔴';
+    tick();
+  } catch(e) {
+    document.getElementById('status-title').textContent = 'マイクへのアクセスが拒否されました';
+    document.getElementById('status-text').textContent = 'ブラウザの設定でマイクを許可してください';
+  }
+}
+
+function stopMeter() {
+  cancelAnimationFrame(animId);
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  isRunning = false;
+  const btn = document.getElementById('start-btn');
+  btn.textContent = '計測開始';
+  btn.style.background = '#0071e3';
+  document.getElementById('db-value').textContent = '--';
+  const lbl = document.getElementById('level-label');
+  lbl.textContent = '停止中';
+  lbl.style.color = '#86868b';
+  document.getElementById('status-icon').textContent = '🎙️';
+  document.getElementById('status-title').textContent = '計測を停止しました';
+  document.getElementById('status-text').textContent = '再計測する場合は「計測開始」をタップ';
+  updateArc(20);
+  bars.forEach(b => { b.style.height = '2px'; b.style.background = '#d1d1d6'; });
+}
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  isRunning ? stopMeter() : startMeter();
+});
+
+document.getElementById('reset-peak').addEventListener('click', () => {
+  peak = -Infinity;
+  document.getElementById('peak-val').textContent = '-- dB';
+  document.getElementById('reset-peak').style.display = 'none';
+});
+</script>
+</body>
+</html>
