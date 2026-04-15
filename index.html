@@ -24,8 +24,6 @@ h1 {
   margin-bottom: 1.5rem;
   color: #1d1d1f;
 }
-
-/* ── メーターリング ── */
 #meter-ring {
   width: 220px;
   height: 220px;
@@ -47,19 +45,9 @@ h1 {
   line-height: 1;
   letter-spacing: -2px;
 }
-#db-unit {
-  font-size: 16px;
-  color: #86868b;
-  margin-top: 2px;
-}
-#level-label {
-  font-size: 13px;
-  font-weight: 500;
-  margin-top: 6px;
-  color: #86868b;
-}
+#db-unit { font-size: 16px; color: #86868b; margin-top: 2px; }
+#level-label { font-size: 13px; font-weight: 500; margin-top: 6px; color: #86868b; }
 
-/* ── 波形バー ── */
 #bars {
   display: flex;
   align-items: flex-end;
@@ -73,10 +61,9 @@ h1 {
   border-radius: 2px 2px 0 0;
   min-height: 2px;
   background: #d1d1d6;
-  transition: height 0.08s ease;
+  transition: height 0.1s ease;
 }
 
-/* ── ピーク行 ── */
 #peak-row {
   display: flex;
   align-items: center;
@@ -88,17 +75,12 @@ h1 {
 }
 #peak-val { font-weight: 500; color: #1d1d1f; }
 #reset-peak {
-  font-size: 12px;
-  color: #0071e3;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px 8px;
+  font-size: 12px; color: #0071e3;
+  background: none; border: none; cursor: pointer;
+  padding: 4px 8px; display: none;
   -webkit-tap-highlight-color: transparent;
-  display: none;
 }
 
-/* ── ステータスカード ── */
 #status-card {
   background: white;
   border-radius: 16px;
@@ -113,7 +95,23 @@ h1 {
 #status-title { font-size: 14px; font-weight: 500; color: #1d1d1f; }
 #status-text { font-size: 12px; color: #86868b; margin-top: 3px; }
 
-/* ── ボタン ── */
+#sensitivity-row {
+  background: white;
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+#sensitivity-row label {
+  font-size: 13px; color: #86868b;
+  display: flex; justify-content: space-between; margin-bottom: 8px;
+}
+#sensitivity-row input[type=range] { width: 100%; }
+#sens-ticks {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: #aeaeb2; margin-top: 4px;
+}
+
 #start-btn {
   width: 100%;
   padding: 16px;
@@ -129,7 +127,6 @@ h1 {
 }
 #start-btn:active { opacity: 0.7; }
 
-/* ── 参考レベル ── */
 #guide {
   background: white;
   border-radius: 16px;
@@ -138,35 +135,21 @@ h1 {
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 #guide-header {
-  font-size: 12px;
-  font-weight: 600;
-  color: #86868b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
+  font-size: 12px; font-weight: 600; color: #86868b;
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
 }
 .guide-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 0;
-  border-bottom: 0.5px solid #f0f0f0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0; border-bottom: 0.5px solid #f0f0f0;
 }
 .guide-row:last-child { border-bottom: none; }
-.guide-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%; flex-shrink: 0;
-}
+.guide-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .guide-label { font-size: 13px; color: #3d3d3f; flex: 1; }
 .guide-db { font-size: 13px; font-weight: 500; color: #1d1d1f; }
 
-/* ── 注意書き ── */
 #disclaimer {
-  font-size: 11px;
-  color: #aeaeb2;
-  text-align: center;
-  margin-top: 1.25rem;
-  line-height: 1.6;
+  font-size: 11px; color: #aeaeb2;
+  text-align: center; margin-top: 1.25rem; line-height: 1.6;
 }
 </style>
 </head>
@@ -176,17 +159,15 @@ h1 {
 
   <div id="meter-ring">
     <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
-      <!-- 背景トラック: 252° の弧 -->
       <circle cx="110" cy="110" r="95"
         fill="none" stroke="#e5e5ea" stroke-width="12" stroke-linecap="round"
         stroke-dasharray="497" stroke-dashoffset="124"
         transform="rotate(126 110 110)"/>
-      <!-- 値の弧 -->
       <circle id="arc" cx="110" cy="110" r="95"
         fill="none" stroke="#0071e3" stroke-width="12" stroke-linecap="round"
         stroke-dasharray="497" stroke-dashoffset="497"
         transform="rotate(126 110 110)"
-        style="transition: stroke-dashoffset 0.12s ease, stroke 0.12s ease;"/>
+        style="transition: stroke-dashoffset 0.15s ease, stroke 0.15s ease;"/>
     </svg>
     <div id="db-display">
       <div id="db-value">--</div>
@@ -208,6 +189,18 @@ h1 {
     <div>
       <div id="status-title">計測を開始してください</div>
       <div id="status-text">「計測開始」をタップするとマイクのアクセスを求めます</div>
+    </div>
+  </div>
+
+  <div id="sensitivity-row">
+    <label>
+      <span>感度調整</span>
+      <span id="sens-val">標準</span>
+    </label>
+    <input type="range" id="sensitivity" min="-20" max="20" value="0" step="1">
+    <div id="sens-ticks">
+      <span>低め（静かに表示）</span>
+      <span>高め</span>
     </div>
   </div>
 
@@ -262,7 +255,16 @@ for (let i = 0; i < NUM_BARS; i++) {
 let audioCtx, analyser, source, animId;
 let isRunning = false;
 let peak = -Infinity;
-const history = new Array(NUM_BARS).fill(20);
+const history = new Array(NUM_BARS).fill(10);
+
+const sensSlider = document.getElementById('sensitivity');
+const sensVal = document.getElementById('sens-val');
+sensSlider.addEventListener('input', () => {
+  const v = parseInt(sensSlider.value);
+  sensVal.textContent = v === 0 ? '標準' : v > 0 ? `+${v} dB` : `${v} dB`;
+});
+
+function getSensOffset() { return parseInt(sensSlider.value); }
 
 function getColor(db) {
   if (db < 50) return '#34C759';
@@ -284,8 +286,7 @@ function getLevelLabel(db) {
 function updateArc(db) {
   const arc = document.getElementById('arc');
   const ratio = Math.max(0, Math.min(1, (db - 20) / 80));
-  const totalLen = 373;
-  arc.style.strokeDashoffset = 497 - totalLen * ratio;
+  arc.style.strokeDashoffset = 497 - 373 * ratio;
   arc.style.stroke = getColor(db);
 }
 
@@ -295,8 +296,8 @@ function tick() {
   let sum = 0;
   for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
   const rms = Math.sqrt(sum / data.length);
-  const raw = rms > 0 ? 20 * Math.log10(rms / 255) + 100 : 20;
-  const db = Math.round(Math.max(20, Math.min(100, raw)));
+  const raw = rms > 0 ? 20 * Math.log10(rms / 255) + 85 + getSensOffset() : 10;
+  const db = Math.round(Math.max(10, Math.min(100, raw)));
 
   document.getElementById('db-value').textContent = db;
   const lbl = document.getElementById('level-label');
@@ -315,7 +316,7 @@ function tick() {
   const maxH = barsEl.offsetHeight || 56;
   bars.forEach((b, i) => {
     const v = history[i];
-    const h = Math.max(2, Math.round(((v - 20) / 80) * maxH));
+    const h = Math.max(2, Math.round(((v - 10) / 90) * maxH));
     b.style.height = h + 'px';
     b.style.background = getColor(v);
   });
@@ -336,10 +337,11 @@ async function startMeter() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.75;
+    analyser.smoothingTimeConstant = 0.85;
     source = audioCtx.createMediaStreamSource(stream);
     source.connect(analyser);
     isRunning = true;
+    peak = -Infinity;
     const btn = document.getElementById('start-btn');
     btn.textContent = '計測停止';
     btn.style.background = '#FF3B30';
@@ -365,7 +367,7 @@ function stopMeter() {
   document.getElementById('status-icon').textContent = '🎙️';
   document.getElementById('status-title').textContent = '計測を停止しました';
   document.getElementById('status-text').textContent = '再計測する場合は「計測開始」をタップ';
-  updateArc(20);
+  updateArc(10);
   bars.forEach(b => { b.style.height = '2px'; b.style.background = '#d1d1d6'; });
 }
 
